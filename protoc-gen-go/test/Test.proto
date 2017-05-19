@@ -1,0 +1,46 @@
+package test;
+
+// service bigcmd
+enum BIG_CMD
+{
+	TEST_SVR=0x1000;
+};
+
+// service subcmd
+enum SUB_CMD
+{
+	TEST_INTERFACE_1=0x101;
+	TEST_INTERFACE_2=0x102;
+};
+
+// req1
+message TestReq1
+{
+	optional uint32 id = 1;
+};
+
+// rsp1
+message TestRsp1
+{
+	optional string msg = 1;
+};
+
+// req2
+message TestReq2
+{
+	optional uint32 id = 1;
+};
+
+// rsp2
+message TestRsp2
+{
+	optional string msg = 1;
+};
+
+// service testsvr
+service TestSvr {
+    // rpc1 test
+	rpc CallTestInterface1(TestReq1) returns(TestRsp1);
+    // rpc2 test
+	rpc CallTestInterface2(TestReq2) returns(TestRsp2);
+};
