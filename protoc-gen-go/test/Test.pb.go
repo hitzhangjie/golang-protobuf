@@ -19,6 +19,11 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
+import (
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
+)
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
@@ -176,6 +181,115 @@ func init() {
 	proto.RegisterType((*TestRsp2)(nil), "test.TestRsp2")
 	proto.RegisterEnum("test.BIG_CMD", BIG_CMD_name, BIG_CMD_value)
 	proto.RegisterEnum("test.SUB_CMD", SUB_CMD_name, SUB_CMD_value)
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion4
+
+// Client API for TestSvr service
+
+type TestSvrClient interface {
+	// rpc1 test
+	CallTestInterface1(ctx context.Context, in *TestReq1, opts ...grpc.CallOption) (*TestRsp1, error)
+	// rpc2 test
+	CallTestInterface2(ctx context.Context, in *TestReq2, opts ...grpc.CallOption) (*TestRsp2, error)
+}
+
+type testSvrClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewTestSvrClient(cc *grpc.ClientConn) TestSvrClient {
+	return &testSvrClient{cc}
+}
+
+func (c *testSvrClient) CallTestInterface1(ctx context.Context, in *TestReq1, opts ...grpc.CallOption) (*TestRsp1, error) {
+	out := new(TestRsp1)
+	err := grpc.Invoke(ctx, "/test.TestSvr/CallTestInterface1", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *testSvrClient) CallTestInterface2(ctx context.Context, in *TestReq2, opts ...grpc.CallOption) (*TestRsp2, error) {
+	out := new(TestRsp2)
+	err := grpc.Invoke(ctx, "/test.TestSvr/CallTestInterface2", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for TestSvr service
+
+type TestSvrServer interface {
+	// rpc1 test
+	CallTestInterface1(context.Context, *TestReq1) (*TestRsp1, error)
+	// rpc2 test
+	CallTestInterface2(context.Context, *TestReq2) (*TestRsp2, error)
+}
+
+func RegisterTestSvrServer(s *grpc.Server, srv TestSvrServer) {
+	s.RegisterService(&_TestSvr_serviceDesc, srv)
+}
+
+func _TestSvr_CallTestInterface1_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TestReq1)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TestSvrServer).CallTestInterface1(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/test.TestSvr/CallTestInterface1",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TestSvrServer).CallTestInterface1(ctx, req.(*TestReq1))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TestSvr_CallTestInterface2_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TestReq2)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TestSvrServer).CallTestInterface2(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/test.TestSvr/CallTestInterface2",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TestSvrServer).CallTestInterface2(ctx, req.(*TestReq2))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _TestSvr_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "test.TestSvr",
+	HandlerType: (*TestSvrServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CallTestInterface1",
+			Handler:    _TestSvr_CallTestInterface1_Handler,
+		},
+		{
+			MethodName: "CallTestInterface2",
+			Handler:    _TestSvr_CallTestInterface2_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "Test.proto",
 }
 
 func init() { proto.RegisterFile("Test.proto", fileDescriptor0) }
