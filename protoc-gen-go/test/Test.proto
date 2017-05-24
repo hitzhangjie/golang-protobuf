@@ -1,5 +1,6 @@
 package test;
 
+<<<<<<< HEAD
 // service bigcmd
 enum BIG_CMD
 {
@@ -14,33 +15,60 @@ enum SUB_CMD
 };
 
 // req1
+=======
+enum BIG_CMD
+{
+	TEST_SVR=0x1;
+};
+
+enum SUB_CMD
+{
+	TEST_INTERFACE_1=0x1;
+	TEST_INTERFACE_2=0x2;
+};
+
+>>>>>>> 14544b2c7bcc946cd87a6ee605a655ac143ad357
 message TestReq1
 {
 	optional uint32 id = 1;
 };
 
+<<<<<<< HEAD
 // rsp1
+=======
+>>>>>>> 14544b2c7bcc946cd87a6ee605a655ac143ad357
 message TestRsp1
 {
 	optional string msg = 1;
 };
 
+<<<<<<< HEAD
 // req2
+=======
+>>>>>>> 14544b2c7bcc946cd87a6ee605a655ac143ad357
 message TestReq2
 {
 	optional uint32 id = 1;
 };
 
+<<<<<<< HEAD
 // rsp2
+=======
+>>>>>>> 14544b2c7bcc946cd87a6ee605a655ac143ad357
 message TestRsp2
 {
 	optional string msg = 1;
 };
 
+<<<<<<< HEAD
 // service testsvr
 service TestSvr {
     // rpc1 test
 	rpc CallTestInterface1(TestReq1) returns(TestRsp1);
     // rpc2 test
+=======
+service TestSvr {
+	rpc CallTestInterface1(TestReq1) returns(TestRsp1);
+>>>>>>> 14544b2c7bcc946cd87a6ee605a655ac143ad357
 	rpc CallTestInterface2(TestReq2) returns(TestRsp2);
 };

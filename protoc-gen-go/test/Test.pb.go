@@ -35,6 +35,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+<<<<<<< HEAD
 // service bigcmd
 type BIG_CMD int32
 
@@ -47,6 +48,19 @@ var BIG_CMD_name = map[int32]string{
 }
 var BIG_CMD_value = map[string]int32{
 	"TEST_SVR": 4096,
+=======
+type BIG_CMD int32
+
+const (
+	BIG_CMD_TEST_SVR BIG_CMD = 1
+)
+
+var BIG_CMD_name = map[int32]string{
+	1: "TEST_SVR",
+}
+var BIG_CMD_value = map[string]int32{
+	"TEST_SVR": 1,
+>>>>>>> 14544b2c7bcc946cd87a6ee605a655ac143ad357
 }
 
 func (x BIG_CMD) Enum() *BIG_CMD {
@@ -67,6 +81,7 @@ func (x *BIG_CMD) UnmarshalJSON(data []byte) error {
 }
 func (BIG_CMD) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+<<<<<<< HEAD
 // service subcmd
 type SUB_CMD int32
 
@@ -82,6 +97,22 @@ var SUB_CMD_name = map[int32]string{
 var SUB_CMD_value = map[string]int32{
 	"TEST_INTERFACE_1": 257,
 	"TEST_INTERFACE_2": 258,
+=======
+type SUB_CMD int32
+
+const (
+	SUB_CMD_TEST_INTERFACE_1 SUB_CMD = 1
+	SUB_CMD_TEST_INTERFACE_2 SUB_CMD = 2
+)
+
+var SUB_CMD_name = map[int32]string{
+	1: "TEST_INTERFACE_1",
+	2: "TEST_INTERFACE_2",
+}
+var SUB_CMD_value = map[string]int32{
+	"TEST_INTERFACE_1": 1,
+	"TEST_INTERFACE_2": 2,
+>>>>>>> 14544b2c7bcc946cd87a6ee605a655ac143ad357
 }
 
 func (x SUB_CMD) Enum() *SUB_CMD {
@@ -102,7 +133,10 @@ func (x *SUB_CMD) UnmarshalJSON(data []byte) error {
 }
 func (SUB_CMD) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
+<<<<<<< HEAD
 // req1
+=======
+>>>>>>> 14544b2c7bcc946cd87a6ee605a655ac143ad357
 type TestReq1 struct {
 	Id               *uint32 `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
@@ -120,7 +154,10 @@ func (m *TestReq1) GetId() uint32 {
 	return 0
 }
 
+<<<<<<< HEAD
 // rsp1
+=======
+>>>>>>> 14544b2c7bcc946cd87a6ee605a655ac143ad357
 type TestRsp1 struct {
 	Msg              *string `protobuf:"bytes,1,opt,name=msg" json:"msg,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
@@ -138,7 +175,10 @@ func (m *TestRsp1) GetMsg() string {
 	return ""
 }
 
+<<<<<<< HEAD
 // req2
+=======
+>>>>>>> 14544b2c7bcc946cd87a6ee605a655ac143ad357
 type TestReq2 struct {
 	Id               *uint32 `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
@@ -156,7 +196,10 @@ func (m *TestReq2) GetId() uint32 {
 	return 0
 }
 
+<<<<<<< HEAD
 // rsp2
+=======
+>>>>>>> 14544b2c7bcc946cd87a6ee605a655ac143ad357
 type TestRsp2 struct {
 	Msg              *string `protobuf:"bytes,1,opt,name=msg" json:"msg,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
@@ -194,9 +237,13 @@ const _ = grpc.SupportPackageIsVersion4
 // Client API for TestSvr service
 
 type TestSvrClient interface {
+<<<<<<< HEAD
 	// rpc1 test
 	CallTestInterface1(ctx context.Context, in *TestReq1, opts ...grpc.CallOption) (*TestRsp1, error)
 	// rpc2 test
+=======
+	CallTestInterface1(ctx context.Context, in *TestReq1, opts ...grpc.CallOption) (*TestRsp1, error)
+>>>>>>> 14544b2c7bcc946cd87a6ee605a655ac143ad357
 	CallTestInterface2(ctx context.Context, in *TestReq2, opts ...grpc.CallOption) (*TestRsp2, error)
 }
 
@@ -229,9 +276,13 @@ func (c *testSvrClient) CallTestInterface2(ctx context.Context, in *TestReq2, op
 // Server API for TestSvr service
 
 type TestSvrServer interface {
+<<<<<<< HEAD
 	// rpc1 test
 	CallTestInterface1(context.Context, *TestReq1) (*TestRsp1, error)
 	// rpc2 test
+=======
+	CallTestInterface1(context.Context, *TestReq1) (*TestRsp1, error)
+>>>>>>> 14544b2c7bcc946cd87a6ee605a655ac143ad357
 	CallTestInterface2(context.Context, *TestReq2) (*TestRsp2, error)
 }
 
@@ -295,11 +346,16 @@ var _TestSvr_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("Test.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
+<<<<<<< HEAD
 	// 201 bytes of a gzipped FileDescriptorProto
+=======
+	// 198 bytes of a gzipped FileDescriptorProto
+>>>>>>> 14544b2c7bcc946cd87a6ee605a655ac143ad357
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x0a, 0x49, 0x2d, 0x2e,
 	0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x29, 0x49, 0x2d, 0x2e, 0x51, 0x12, 0xe3, 0xe2,
 	0x00, 0x89, 0x05, 0xa5, 0x16, 0x1a, 0x0a, 0x71, 0x71, 0x31, 0x65, 0xa6, 0x48, 0x30, 0x2a, 0x30,
 	0x6a, 0xf0, 0x2a, 0x89, 0x43, 0xc5, 0x8b, 0x0b, 0x0c, 0x85, 0xb8, 0xb9, 0x98, 0x73, 0x8b, 0xd3,
+<<<<<<< HEAD
 	0xc1, 0x12, 0x9c, 0x48, 0x1a, 0x8c, 0x70, 0x68, 0x30, 0x42, 0xd1, 0xa0, 0x25, 0xc1, 0xc5, 0xee,
 	0xe4, 0xe9, 0x1e, 0xef, 0xec, 0xeb, 0x22, 0xc4, 0xcb, 0xc5, 0x11, 0xe2, 0x1a, 0x1c, 0x12, 0x1f,
 	0x1c, 0x16, 0x24, 0xd0, 0xa0, 0xa0, 0x65, 0xce, 0xc5, 0x1e, 0x1c, 0xea, 0x04, 0x96, 0x11, 0xe5,
@@ -309,4 +365,15 @@ var fileDescriptor0 = []byte{
 	0x25, 0x26, 0xa7, 0x1a, 0x0a, 0xf1, 0xe9, 0x81, 0x3c, 0xa7, 0x07, 0xf3, 0x99, 0x14, 0x32, 0x1f,
 	0xe4, 0x23, 0x6c, 0xba, 0x8c, 0xd0, 0x74, 0x19, 0xa1, 0xe9, 0x32, 0x02, 0x04, 0x00, 0x00, 0xff,
 	0xff, 0xd0, 0xbb, 0xe7, 0xaf, 0x3e, 0x01, 0x00, 0x00,
+=======
+	0xc1, 0x12, 0x9c, 0x48, 0x1a, 0x8c, 0x70, 0x68, 0x30, 0x42, 0xd1, 0xa0, 0x25, 0xce, 0xc5, 0xee,
+	0xe4, 0xe9, 0x1e, 0xef, 0xec, 0xeb, 0x22, 0xc4, 0xc3, 0xc5, 0x11, 0xe2, 0x1a, 0x1c, 0x12, 0x1f,
+	0x1c, 0x16, 0x24, 0xc0, 0xa8, 0x65, 0xca, 0xc5, 0x1e, 0x1c, 0xea, 0x04, 0x96, 0x10, 0xe1, 0x12,
+	0x00, 0x4b, 0x78, 0xfa, 0x85, 0xb8, 0x06, 0xb9, 0x39, 0x3a, 0xbb, 0xc6, 0x1b, 0x0a, 0x30, 0x62,
+	0x11, 0x35, 0x12, 0x60, 0x32, 0x2a, 0xe5, 0x62, 0x07, 0x59, 0x14, 0x5c, 0x56, 0x24, 0x64, 0xc2,
+	0x25, 0xe4, 0x9c, 0x98, 0x93, 0x03, 0xe2, 0x7a, 0xe6, 0x95, 0xa4, 0x16, 0xa5, 0x25, 0x26, 0xa7,
+	0x1a, 0x0a, 0xf1, 0xe9, 0x81, 0x7c, 0xa6, 0x07, 0xf3, 0x96, 0x14, 0x32, 0x1f, 0xe4, 0x1d, 0x6c,
+	0xba, 0x8c, 0xd0, 0x74, 0x19, 0xa1, 0xe9, 0x32, 0x02, 0x04, 0x00, 0x00, 0xff, 0xff, 0xa6, 0xcd,
+	0x0f, 0xab, 0x3b, 0x01, 0x00, 0x00,
+>>>>>>> 14544b2c7bcc946cd87a6ee605a655ac143ad357
 }

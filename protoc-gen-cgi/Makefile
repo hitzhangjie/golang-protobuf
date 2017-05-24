@@ -33,6 +33,7 @@
 #	cd testdata && make test
 
 
-all: *.go ./descriptor/*.go ./grpc/*.go ./plugin/*.go 
-	go build -o protoc-gen-go *.go
-	mv protoc-gen-go ~/bin
+all: src/*.go src/descriptor/*.go src/cgiservice/*.go ./src/plugin/*.go  ./src/generator/*.go
+	rm -f ~/bin/protoc-gen-cgi
+	GOPATH=${GOPATH}:$(shell pwd) go build -gcflags "-N -l" -o protoc-gen-cgi src/*.go
+	mv protoc-gen-cgi ~/bin

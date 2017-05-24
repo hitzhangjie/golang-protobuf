@@ -1,6 +1,6 @@
 // Go support for Protocol Buffers - Google's data interchange format
 //
-// Copyright 2010 The Go Authors.  All rights reserved.
+// Copyright 2013 The Go Authors.  All rights reserved.
 // https://github.com/golang/protobuf
 //
 // Redistribution and use in source and binary forms, with or without
@@ -29,15 +29,57 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-syntax = "proto2";
+package generator
 
-package multitest;
+import (
+	"testing"
 
-message Multi3 {
-  enum HatType {
-    FEDORA = 1;
-    FEZ = 2;
-  };
-  optional HatType hat_type = 1;
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+)
+
+func TestCamelCase(t *testing.T) {
+	tests := []struct {
+		in, want string
+	}{
+		{"one", "One"},
+		{"one_two", "OneTwo"},
+		{"_my_field_name_2", "XMyFieldName_2"},
+		{"Something_Capped", "Something_Capped"},
+		{"my_Name", "My_Name"},
+		{"OneTwo", "OneTwo"},
+		{"_", "X"},
+		{"_a_", "XA_"},
+	}
+	for _, tc := range tests {
+		if got := CamelCase(tc.in); got != tc.want {
+			t.Errorf("CamelCase(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
 }
 
+func TestGoPackageOption(t *testing.T) {
+	tests := []struct {
+		in           string
+		impPath, pkg string
+		ok           bool
+	}{
+		{"", "", "", false},
+		{"foo", "", "foo", true},
+		{"github.com/golang/bar", "github.com/golang/bar", "bar", true},
+		{"github.com/golang/bar;baz", "github.com/golang/bar", "baz", true},
+	}
+	for _, tc := range tests {
+		d := &FileDescriptor{
+			FileDescriptorProto: &descriptor.FileDescriptorProto{
+				Options: &descriptor.FileOptions{
+					GoPackage: &tc.in,
+				},
+			},
+		}
+		impPath, pkg, ok := d.goPackageOption()
+		if impPath != tc.impPath || pkg != tc.pkg || ok != tc.ok {
+			t.Errorf("go_package = %q => (%q, %q, %t), want (%q, %q, %t)", tc.in,
+				impPath, pkg, ok, tc.impPath, tc.pkg, tc.ok)
+		}
+	}
+}

@@ -1,6 +1,6 @@
 // Go support for Protocol Buffers - Google's data interchange format
 //
-// Copyright 2010 The Go Authors.  All rights reserved.
+// Copyright 2015 The Go Authors.  All rights reserved.
 // https://github.com/golang/protobuf
 //
 // Redistribution and use in source and binary forms, with or without
@@ -29,42 +29,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-syntax = "proto2";
+package main
 
-package imp;
-
-import "imp2.proto";
-import "imp3.proto";
-
-message ImportedMessage {
-  required int64 field = 1;
-
-  // The forwarded getters for these fields are fiddly to get right.
-  optional ImportedMessage2 local_msg = 2;
-  optional ForeignImportedMessage foreign_msg = 3;  // in imp3.proto
-  optional Owner enum_field = 4;
-  oneof union {
-    int32 state = 9;
-  }
-
-  repeated string name = 5;
-  repeated Owner boss = 6;
-  repeated ImportedMessage2 memo = 7;
-
-  map<string, ImportedMessage2> msg_map = 8;
-
-  enum Owner {
-    DAVE = 1;
-    MIKE = 2;
-  }
-
-  extensions 90 to 100;
-}
-
-message ImportedMessage2 {
-}
-
-message ImportedExtendable {
-  option message_set_wire_format = true;
-  extensions 100 to max;
-}
+//import _ "github.com/golang/protobuf/protoc-gen-go/cgiservice"
+import _ "cgiservice"

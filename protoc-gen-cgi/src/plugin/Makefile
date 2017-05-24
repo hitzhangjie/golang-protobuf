@@ -29,45 +29,16 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-all:
-	@echo run make test
-
-include ../../Make.protobuf
-
-test:	golden testbuild
-
-#test:	golden testbuild extension_test
-#	./extension_test
-#	@echo PASS
-
-my_test/test.pb.go: my_test/test.proto
-	protoc --go_out=Mmulti/multi1.proto=github.com/golang/protobuf/protoc-gen-go/testdata/multi:. $<
-
-golden:
-	make -B my_test/test.pb.go
-	sed -i -e '/return.*fileDescriptor/d' my_test/test.pb.go
-	sed -i -e '/^var fileDescriptor/,/^}/d' my_test/test.pb.go
-	sed -i -e '/proto.RegisterFile.*fileDescriptor/d' my_test/test.pb.go
-	gofmt -w my_test/test.pb.go
-	diff -w my_test/test.pb.go my_test/test.pb.go.golden
-
-nuke:	clean
-
-testbuild:	regenerate
-	go test
-
+# Not stored here, but plugin.proto is in https://github.com/google/protobuf/
+# at src/google/protobuf/compiler/plugin.proto
+# Also we need to fix an import.
 regenerate:
-	# Invoke protoc once to generate three independent .pb.go files in the same package.
-	protoc --go_out=. multi/multi1.proto multi/multi2.proto multi/multi3.proto
+	@echo WARNING! THIS RULE IS PROBABLY NOT RIGHT FOR YOUR INSTALLATION
+	protoc --go_out=Mgoogle/protobuf/descriptor.proto=github.com/golang/protobuf/protoc-gen-go/descriptor:../../../../.. \
+		-I$(HOME)/src/protobuf/include $(HOME)/src/protobuf/include/google/protobuf/compiler/plugin.proto
 
-#extension_test:	extension_test.$O
-#	$(LD) -L. -o $@ $<
+restore:
+	cp plugin.pb.golden plugin.pb.go
 
-#multi.a: multi3.pb.$O multi2.pb.$O multi1.pb.$O
-#	rm -f multi.a
-#	$(QUOTED_GOBIN)/gopack grc $@ $<
-
-#test.pb.go:	imp.pb.go
-#multi1.pb.go:	multi2.pb.go multi3.pb.go
-#main.$O: imp.pb.$O test.pb.$O multi.a
-#extension_test.$O: extension_base.pb.$O extension_extra.pb.$O extension_user.pb.$O
+preserve:
+	cp plugin.pb.go plugin.pb.golden

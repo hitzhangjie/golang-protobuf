@@ -29,10 +29,12 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#test:
-#	cd testdata && make test
+include $(GOROOT)/src/Make.inc
 
+TARG=github.com/golang/protobuf/compiler/generator
+GOFILES=\
+	generator.go\
 
-all: *.go ./descriptor/*.go ./grpc/*.go ./plugin/*.go 
-	go build -o protoc-gen-go *.go
-	mv protoc-gen-go ~/bin
+DEPS=../descriptor ../plugin ../../proto
+
+include $(GOROOT)/src/Make.pkg
