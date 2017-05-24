@@ -29,5 +29,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-test:
-	cd testdata && make test
+#test:
+#	cd testdata && make test
+
+
+all: *.go ./descriptor/*.go ./grpc/*.go ./plugin/*.go 
+	go build -o protoc-gen-go *.go
+	mv protoc-gen-go ~/bin
