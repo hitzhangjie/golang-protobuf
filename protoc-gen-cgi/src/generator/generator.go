@@ -37,13 +37,13 @@
 package generator
 
 import (
-	"bufio"
+	//	"bufio"
 	"bytes"
 	"compress/gzip"
 	"fmt"
-	"go/parser"
-	"go/printer"
-	"go/token"
+	//"go/parser"
+	//"go/printer"
+	//"go/token"
 	"log"
 	"os"
 	"path"
@@ -1172,66 +1172,170 @@ func (g *Generator) generate(file *FileDescriptor) {
 	g.usedPackages = make(map[string]bool)
 
 	if g.file.index == 0 {
-		// For one file in the package, assert version compatibility.
-		g.P("// This is a compile-time assertion to ensure that this generated file")
-		g.P("// is compatible with the proto package it is being compiled against.")
-		g.P("// A compilation error at this line likely means your copy of the")
-		g.P("// proto package needs to be updated.")
-		g.P("const _ = ", g.Pkg["proto"], ".ProtoPackageIsVersion", generatedCodeVersion, " // please upgrade the proto package")
-		g.P()
+		g.P("/******************************** introduction *********************************/")
+
+		var intro string = `This file is gnerated by protoc plugin 'protoc-gen-cgi'.
+
+	* cgi-worker xml: 
+		- referenced by jungle-web framework
+		- put it into ${jungle-web-project}/src/main/resources/META-INF/worker
+
+	* cgi-service java class:
+		- referenced by your own java code in jungle-web project
+		- put it into ${jungle-web-project/src/main/.../...}
+
+	* usage:
+		- invoking protoc with params '--cgi_out=dir', only cgi-worker xml is generated
+		- invoking protoc with params '--cgi_out=plugins=service:dir', both cgi-worker xml and cgi-service java class are gnerated`
+		g.P(intro)
 	}
-	for _, td := range g.file.imp {
-		g.generateImported(td)
-	}
-	for _, enum := range g.file.enum {
-		g.generateEnum(enum)
-	}
-	for _, desc := range g.file.desc {
-		// Don't generate virtual messages for maps.
-		if desc.GetOptions().GetMapEntry() {
-			continue
+
+	g.P("/******************************** cgi-worker xml *********************************/")
+
+	g.generateCgiWorkerXml(file)
+
+	/*
+		for _, td := range g.file.imp {
+			g.generateImported(td)
 		}
-		g.generateMessage(desc)
-	}
-	for _, ext := range g.file.ext {
-		g.generateExtension(ext)
-	}
-	g.generateInitFunction()
+		for _, enum := range g.file.enum {
+			g.generateEnum(enum)
+		}
+		for _, desc := range g.file.desc {
+			// Don't generate virtual messages for maps.
+			if desc.GetOptions().GetMapEntry() {
+				continue
+			}
+			g.generateMessage(desc)
+		}
+		for _, ext := range g.file.ext {
+			g.generateExtension(ext)
+		}
+		g.generateInitFunction()
+	*/
+
+	g.P("/******************************** cgi-service xml *********************************/")
 
 	// Run the plugins before the imports so we know which imports are necessary.
 	g.runPlugins(file)
 
-	g.generateFileDescriptor(file)
+	//g.generateFileDescriptor(file)
 
 	// Generate header and imports last, though they appear first in the output.
-	rem := g.Buffer
-	g.Buffer = new(bytes.Buffer)
-	g.generateHeader()
-	g.generateImports()
-	if !g.writeOutput {
+	//rem := g.Buffer
+	//g.Buffer = new(bytes.Buffer)
+	//g.generateHeader()
+	//g.generateImports()
+	//if !g.writeOutput {
+	//return
+	//}
+	//g.Write(rem.Bytes())
+
+	/*
+		// Reformat generated code.
+		fset := token.NewFileSet()
+		raw := g.Bytes()
+		ast, err := parser.ParseFile(fset, "", g, parser.ParseComments)
+		if err != nil {
+			// Print out the bad code with line numbers.
+			// This should never happen in practice, but it can while changing generated code,
+			// so consider this a debugging aid.
+			var src bytes.Buffer
+			s := bufio.NewScanner(bytes.NewReader(raw))
+			for line := 1; s.Scan(); line++ {
+				fmt.Fprintf(&src, "%5d\t%s\n", line, s.Bytes())
+			}
+			g.Fail("bad Go source code was generated:", err.Error(), "\n"+src.String())
+		}
+		g.Reset()
+		err = (&printer.Config{Mode: printer.TabIndent | printer.UseSpaces, Tabwidth: 8}).Fprint(g, fset, ast)
+		if err != nil {
+			g.Fail("generated Go source code could not be reformatted:", err.Error())
+		}
+	*/
+}
+
+func (g *Generator) generateCgiWorkerXml(file *FileDescriptor) {
+
+	if len(file.FileDescriptorProto.Service) == 0 {
 		return
 	}
-	g.Write(rem.Bytes())
+	g.P()
 
-	// Reformat generated code.
-	fset := token.NewFileSet()
-	raw := g.Bytes()
-	ast, err := parser.ParseFile(fset, "", g, parser.ParseComments)
-	if err != nil {
-		// Print out the bad code with line numbers.
-		// This should never happen in practice, but it can while changing generated code,
-		// so consider this a debugging aid.
-		var src bytes.Buffer
-		s := bufio.NewScanner(bytes.NewReader(raw))
-		for line := 1; s.Scan(); line++ {
-			fmt.Fprintf(&src, "%5d\t%s\n", line, s.Bytes())
-		}
-		g.Fail("bad Go source code was generated:", err.Error(), "\n"+src.String())
+	g.P("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+	g.P("<cgi-project name=\"{cgi_project_name}\">")
+
+	//for i, service := range file.FileDescriptorProto.Service {
+	for i, service := range file.FileDescriptorProto.Service {
+		g.generateCgiWorkerRpcItem(file, service, i)
 	}
-	g.Reset()
-	err = (&printer.Config{Mode: printer.TabIndent | printer.UseSpaces, Tabwidth: 8}).Fprint(g, fset, ast)
-	if err != nil {
-		g.Fail("generated Go source code could not be reformatted:", err.Error())
+
+	g.P("</cgi-project>")
+}
+
+func (g *Generator) generateCgiWorkerRpcItem(
+	file *FileDescriptor, service *descriptor.ServiceDescriptorProto, index int) {
+
+	//origServName := service.GetName()
+
+	var bigcmd int32
+	//m := make(map[string]int32)
+	m := make(map[int32]int32)
+	for _, enum := range file.GetEnumType() {
+		if "BIG_CMD" == enum.GetName() {
+			bigcmd = enum.GetValue()[0].GetNumber()
+		}
+		if "SUB_CMD" == enum.GetName() {
+
+			var i int32 = 0
+			for _, v := range enum.GetValue() {
+				//m[v.GetName()] = v.GetNumber()
+				m[i] = v.GetNumber()
+				i++
+			}
+		}
+	}
+
+	g.P()
+
+	for idx, method := range service.Method {
+		//fixme! subcmd should be extracted from rpc's comments
+
+		//subcmd := m[method.GetName()]
+		subcmd := m[int32(idx)]
+		//g.generateClientMethod(origServName, method, bigcmd, subcmd)
+		//g.generateIliveBackendItem(origServName, method, bigcmd, subcmd)
+
+		//sname := fmt.Sprintf("/%s/%s", fullServName, method.GetName())
+		methName := CamelCase(method.GetName())
+		/*
+			<ilive name="查询主播真爱排行榜" id="CMD_QUERY_TOTAL_RANK"
+				workname="spp_ilive_real_love_svr" l5Modid="549185" l5Cmdid="14155776"
+				testL5Modid="492033" testL5Cmdid="6488064" cmd="0x6955" subCmd="0x3"
+				timeout="2000" tryAgain="true"
+				reqProtoClazz="com.tencent.jungle.now.web.proto.PBRealLove$GetTotalRankBoardReq"
+				rspProtoClazz="com.tencent.jungle.now.web.proto.PBRealLove$GetTotalRankBoardRsp"
+				contacter="jakezklin" desc="查询主播真爱排行榜" pbResult="true">
+			</ilive>
+		*/
+		g.In()
+		g.P("// method index: ", idx)
+
+		g.P("<ilive name=\"", methName, "\" id=\"", &subcmd, "\"")
+
+		g.In()
+		g.P("workname=\"\" l5Modid=\"xxxx\" l5Cmdid=\"yyy\"")
+		g.P("testL5Modid=\"\" testL5Cmdid=\"\" cmd=\"", &bigcmd, "\" subCmd=\"", &subcmd, "\"")
+		g.P("timeout=\"2000\" tryAgain=\"true\"")
+		g.P("reqProtoClazz=\"", method.GetInputType()[1:], "\"")
+		g.P("rspProtoClazz=\"", method.GetOutputType()[1:], "\"")
+		g.P("contacter=\"zzz\" desc=\"...\" pbResult=\"true\">")
+
+		g.Out()
+		g.P("</ilive>")
+		g.Out()
+
+		g.P()
 	}
 }
 

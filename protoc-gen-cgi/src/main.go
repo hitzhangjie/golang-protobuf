@@ -52,11 +52,17 @@ import (
 	"io/ioutil"
 	"os"
 
+	"generator"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/protoc-gen-go/generator"
 )
 
 func main() {
+
+	//var count = 1
+	//for count < 6789259015 {
+	//count++
+	//}
+
 	// Begin by allocating a generator. The request and response structures are stored there
 	// so we can do error handling easily - the response structure contains the field to
 	// report failure.
