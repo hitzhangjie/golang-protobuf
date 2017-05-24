@@ -29,33 +29,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
-all:	install
-
-install:
-	go install ./proto ./jsonpb ./ptypes
-	go install ./protoc-gen-go
-
-test:
-	go test ./proto ./jsonpb ./ptypes
-	make -C protoc-gen-go/testdata test
-
-clean:
-	go clean ./...
-
-nuke:
-	go clean -i ./...
-
+# Not stored here, but descriptor.proto is in https://github.com/google/protobuf/
+# at src/google/protobuf/descriptor.proto
 regenerate:
-	make -C protoc-gen-go/descriptor regenerate
-	make -C protoc-gen-go/plugin regenerate
-	make -C protoc-gen-go/testdata regenerate
-
-	make -C proto/testdata regenerate
-	make -C jsonpb/jsonpb_test_proto regenerate
-	make -C _conformance regenerate
-
-	make -C protoc-gen-cgi/descriptor regenerate
-	make -C protoc-gen-cgi/plugin regenerate
-	make -C protoc-gen-cgi/testdata regenerate
-
+	@echo WARNING! THIS RULE IS PROBABLY NOT RIGHT FOR YOUR INSTALLATION
+	protoc --go_out=../../../../.. -I$(HOME)/src/protobuf/include $(HOME)/src/protobuf/include/google/protobuf/descriptor.proto

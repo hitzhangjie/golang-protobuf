@@ -29,33 +29,12 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+include $(GOROOT)/src/Make.inc
 
-all:	install
+TARG=github.com/golang/protobuf/compiler/generator
+GOFILES=\
+	generator.go\
 
-install:
-	go install ./proto ./jsonpb ./ptypes
-	go install ./protoc-gen-go
+DEPS=../descriptor ../plugin ../../proto
 
-test:
-	go test ./proto ./jsonpb ./ptypes
-	make -C protoc-gen-go/testdata test
-
-clean:
-	go clean ./...
-
-nuke:
-	go clean -i ./...
-
-regenerate:
-	make -C protoc-gen-go/descriptor regenerate
-	make -C protoc-gen-go/plugin regenerate
-	make -C protoc-gen-go/testdata regenerate
-
-	make -C proto/testdata regenerate
-	make -C jsonpb/jsonpb_test_proto regenerate
-	make -C _conformance regenerate
-
-	make -C protoc-gen-cgi/descriptor regenerate
-	make -C protoc-gen-cgi/plugin regenerate
-	make -C protoc-gen-cgi/testdata regenerate
-
+include $(GOROOT)/src/Make.pkg

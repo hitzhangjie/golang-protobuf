@@ -1,0 +1,9 @@
+package test;
+
+// xxxxxxxxxxxxxxxxxxxxxxxxx comments
+// yyyyyyyyyyyyyyyyyyyyyyyyy comments
+enum SUB_CMD
+{
+	CMD1 =0x101;
+	CMD2 =0x102;
+};
