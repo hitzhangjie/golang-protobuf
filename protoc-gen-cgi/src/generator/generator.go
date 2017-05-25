@@ -313,12 +313,40 @@ func (d *FileDescriptor) goPackageName() (name string, explicit bool) {
 	return baseName(d.GetName()), false
 }
 
-// goFileName returns the output name for the generated Go file.
-func (d *FileDescriptor) goFileName() string {
+func (g *Generator) genFileName(d *FileDescriptor) string {
+
 	name := *d.Name
 	if ext := path.Ext(name); ext == ".proto" || ext == ".protodevel" {
 		name = name[:len(name)-len(ext)]
 	}
+
+	// check if 'plugins' param is passed when invoking protoc,
+	// in order to decide how to name the generated file.
+	if _, ok := g.Param["plugins"]; ok {
+		name += ".pb.cgi"
+	} else {
+		name += ".pb.xml"
+	}
+
+	// Does the file have a "go_package" option?
+	// If it does, it may override the filename.
+	if impPath, _, ok := d.goPackageOption(); ok && impPath != "" {
+		// Replace the existing dirname with the declared import path.
+		_, name = path.Split(name)
+		name = path.Join(impPath, name)
+		return name
+	}
+
+	return name
+}
+
+// genFileName returns the output name for the generated Go file.
+func (d *FileDescriptor) genFileName() string {
+	name := *d.Name
+	if ext := path.Ext(name); ext == ".proto" || ext == ".protodevel" {
+		name = name[:len(name)-len(ext)]
+	}
+
 	name += ".pb.go"
 
 	// Does the file have a "go_package" option?
@@ -1140,15 +1168,35 @@ func (g *Generator) GenerateAllFiles() {
 		if !g.writeOutput {
 			continue
 		}
+
+		all_content := g.String()
+		file_content := strings.Split(all_content, "@@@split@@@\n")
+		file_fullname := file.GetName()
+		file_basename := file_fullname[:strings.LastIndex(file_fullname, ".")]
+
 		g.Response.File = append(g.Response.File, &plugin.CodeGeneratorResponse_File{
-			Name:    proto.String(file.goFileName()),
-			Content: proto.String(g.String()),
+			//Name:    proto.String(g.genFileName(file)),
+			//Content: proto.String(g.String()),
+			Name:    proto.String(file_basename + ".pb.xml"),
+			Content: proto.String(file_content[0]),
 		})
+
+		// test generate multiple files at one time
+		g.Response.File = append(g.Response.File, &plugin.CodeGeneratorResponse_File{
+			//Name:    proto.String(file.genFileName()),
+			//Content: proto.String(g.String()),
+			Name:    proto.String(file_basename + ".pb.java"),
+			Content: proto.String(file_content[1]),
+		})
+
 	}
 }
 
 // Run all the plugins associated with the file.
 func (g *Generator) runPlugins(file *FileDescriptor) {
+	g.P("@@@split@@@")
+
+	//g.P("/******************************** cgi-service xml *********************************/")
 	for _, p := range plugins {
 		p.Generate(file)
 	}
@@ -1171,26 +1219,41 @@ func (g *Generator) generate(file *FileDescriptor) {
 	g.file = g.FileOf(file.FileDescriptorProto)
 	g.usedPackages = make(map[string]bool)
 
-	if g.file.index == 0 {
-		g.P("/******************************** introduction *********************************/")
+	/******************************** introduction *********************************/
+	//This file is gnerated by protoc plugin 'protoc-gen-cgi'.
 
-		var intro string = `This file is gnerated by protoc plugin 'protoc-gen-cgi'.
+	//- cgi-worker xml:
+	//- referenced by jungle-web framework
+	//- put it into ${jungle-web-project}/src/main/resources/META-INF/worker
 
-	* cgi-worker xml: 
-		- referenced by jungle-web framework
-		- put it into ${jungle-web-project}/src/main/resources/META-INF/worker
+	//- cgi-service java class:
+	//- referenced by your own java code in jungle-web project
+	//- put it into ${jungle-web-project/src/main/.../...}
 
-	* cgi-service java class:
-		- referenced by your own java code in jungle-web project
-		- put it into ${jungle-web-project/src/main/.../...}
+	//- usage:
+	//- invoking protoc with params '--cgi_out=dir', only cgi-worker xml is generated
+	//- invoking protoc with params '--cgi_out=plugins=service:dir', both cgi-worker xml
+	//  and cgi-service java class are gnerated
 
-	* usage:
-		- invoking protoc with params '--cgi_out=dir', only cgi-worker xml is generated
-		- invoking protoc with params '--cgi_out=plugins=service:dir', both cgi-worker xml and cgi-service java class are gnerated`
-		g.P(intro)
+	/******************************** cgi-worker xml *********************************/
+
+	options := file.GetOptions()
+	if options != nil {
+		// option java_outer_classname must be specified
+		java_outer_classname := options.GetJavaOuterClassname()
+		if java_outer_classname == "" {
+			g.P("java_outer_classname must be specified.")
+		}
+
+		// disable option java_multiple_files
+		java_multiple_files := options.GetJavaMultipleFiles()
+		if java_multiple_files {
+			g.Fail(`option java_multiple_files must be disabed, we suggest generating 
+					classes in one wrapping class named by "java_outer_classname"`)
+		}
+	} else {
+		g.Fail("option java_outer_classname must be specified.")
 	}
-
-	g.P("/******************************** cgi-worker xml *********************************/")
 
 	g.generateCgiWorkerXml(file)
 
@@ -1214,7 +1277,7 @@ func (g *Generator) generate(file *FileDescriptor) {
 		g.generateInitFunction()
 	*/
 
-	g.P("/******************************** cgi-service xml *********************************/")
+	/******************************** cgi-service xml *********************************/
 
 	// Run the plugins before the imports so we know which imports are necessary.
 	g.runPlugins(file)
@@ -1257,10 +1320,11 @@ func (g *Generator) generate(file *FileDescriptor) {
 
 func (g *Generator) generateCgiWorkerXml(file *FileDescriptor) {
 
+	//g.P("/******************************** cgi-worker xml *********************************/")
+
 	if len(file.FileDescriptorProto.Service) == 0 {
 		return
 	}
-	g.P()
 
 	g.P("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
 	g.P("<cgi-project name=\"{cgi_project_name}\">")
@@ -1271,12 +1335,13 @@ func (g *Generator) generateCgiWorkerXml(file *FileDescriptor) {
 	}
 
 	g.P("</cgi-project>")
+	g.P()
 }
 
 func (g *Generator) generateCgiWorkerRpcItem(
 	file *FileDescriptor, service *descriptor.ServiceDescriptorProto, index int) {
 
-	//origServName := service.GetName()
+	origServName := service.GetName()
 
 	var bigcmd int32
 	//m := make(map[string]int32)
@@ -1319,17 +1384,29 @@ func (g *Generator) generateCgiWorkerRpcItem(
 			</ilive>
 		*/
 		g.In()
-		g.P("// method index: ", idx)
+		//g.P("// method index: ", idx)
 
-		g.P("<ilive name=\"", methName, "\" id=\"", &subcmd, "\"")
+		//g.P("<ilive name=\"", methName, "\" id=\"", &subcmd, "\"")
+		g.P("<ilive name=\"", origServName, ".", methName, "\" id=\"", UpperCase(origServName), "_CMD_", UpperCase(methName), "\"")
 
 		g.In()
-		g.P("workname=\"\" l5Modid=\"xxxx\" l5Cmdid=\"yyy\"")
-		g.P("testL5Modid=\"\" testL5Cmdid=\"\" cmd=\"", &bigcmd, "\" subCmd=\"", &subcmd, "\"")
-		g.P("timeout=\"2000\" tryAgain=\"true\"")
+		g.P("workname=\"", origServName, "\" l5Modid=\"${L5_MID}\" l5Cmdid=\"${L5_CID}\"")
+		g.P("testL5Modid=\"${Test_L5_MID}\" testL5Cmdid=\"${Test_L5_CID}\" cmd=\"", &bigcmd, "\" subCmd=\"", &subcmd, "\"")
+		g.P("timeout=\"2000\" tryAgain=\"false\"")
 		g.P("reqProtoClazz=\"", method.GetInputType()[1:], "\"")
 		g.P("rspProtoClazz=\"", method.GetOutputType()[1:], "\"")
-		g.P("contacter=\"zzz\" desc=\"...\" pbResult=\"true\">")
+
+		// desc
+		interface_path := fmt.Sprintf("6,%d,2,%d", index, idx)
+		text := ""
+		desc := ""
+		if loc, ok := g.file.comments[interface_path]; ok {
+			text = strings.TrimSuffix(loc.GetLeadingComments(), "\n")
+			for _, line := range strings.Split(text, "\n") {
+				desc += strings.TrimPrefix(line, " ")
+			}
+		}
+		g.P("contacter=\"${Contact}\" desc=\"", desc, "\" pbResult=\"true\">")
 
 		g.Out()
 		g.P("</ilive>")
@@ -1432,7 +1509,7 @@ func (g *Generator) generateImports() {
 		if fd.PackageName() == g.packageName {
 			continue
 		}
-		filename := fd.goFileName()
+		filename := fd.genFileName()
 		// By default, import path is the dirname of the Go filename.
 		importPath := path.Dir(filename)
 		if substitution, ok := g.ImportMap[s]; ok {
@@ -2766,6 +2843,22 @@ func isASCIILower(c byte) bool {
 // Is c an ASCII digit?
 func isASCIIDigit(c byte) bool {
 	return '0' <= c && c <= '9'
+}
+
+func UpperCase(s string) string {
+	if s == "" {
+		return ""
+	}
+	t := make([]byte, 0, 32)
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if isASCIILower(c) {
+			c ^= ' ' // make it a capital letter
+		}
+		t = append(t, c)
+	}
+
+	return string(t)
 }
 
 // CamelCase returns the CamelCased name.

@@ -58,10 +58,12 @@ import (
 
 func main() {
 
-	//var count = 1
-	//for count < 6789259015 {
-	//count++
-	//}
+	/*
+		var count = 1
+		for count < 6789259015 {
+			count++
+		}
+	*/
 
 	// Begin by allocating a generator. The request and response structures are stored there
 	// so we can do error handling easily - the response structure contains the field to

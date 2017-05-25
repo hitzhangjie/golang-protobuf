@@ -1,8 +1,5 @@
 package test;
 
-option java_outer_classname = "PBXXX";
-//option java_multiple_files = true;
-
 enum BIG_CMD
 {
 	TEST_SVR=0x1;
@@ -43,4 +40,15 @@ service TestSvr {
     // testsvr interface 2
     // -desc this interface
 	rpc CallTestInterface2(TestReq2) returns(TestRsp2);
+};
+
+/* testsvr service v2 */
+service TestSvrV2 {
+    // testsvr interface v2_1
+    // - desc this interface
+	rpc CallTestInterfaceV2_1(TestReq1) returns(TestRsp1);
+
+    // testsvr interface v2_2
+    // -desc this interface
+	rpc CallTestInterfaceV2_2(TestReq2) returns(TestRsp2);
 };
