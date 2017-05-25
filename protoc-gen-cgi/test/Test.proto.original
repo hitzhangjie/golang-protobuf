@@ -41,3 +41,14 @@ service TestSvr {
     // -desc this interface
 	rpc CallTestInterface2(TestReq2) returns(TestRsp2);
 };
+
+/* testsvr service v2 */
+service TestSvrV2 {
+    // testsvr interface v2_1
+    // - desc this interface
+	rpc CallTestInterfaceV2_1(TestReq1) returns(TestRsp1);
+
+    // testsvr interface v2_2
+    // -desc this interface
+	rpc CallTestInterfaceV2_2(TestReq2) returns(TestRsp2);
+};

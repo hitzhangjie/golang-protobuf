@@ -1169,19 +1169,34 @@ func (g *Generator) GenerateAllFiles() {
 			continue
 		}
 
+		all_content := g.String()
+		file_content := strings.Split(all_content, "@@@split@@@\n")
+		file_fullname := file.GetName()
+		file_basename := file_fullname[:strings.LastIndex(file_fullname, ".")]
+
+		g.Response.File = append(g.Response.File, &plugin.CodeGeneratorResponse_File{
+			//Name:    proto.String(g.genFileName(file)),
+			//Content: proto.String(g.String()),
+			Name:    proto.String(file_basename + ".pb.xml"),
+			Content: proto.String(file_content[0]),
+		})
+
+		// test generate multiple files at one time
 		g.Response.File = append(g.Response.File, &plugin.CodeGeneratorResponse_File{
 			//Name:    proto.String(file.genFileName()),
-			Name:    proto.String(g.genFileName(file)),
-			Content: proto.String(g.String()),
+			//Content: proto.String(g.String()),
+			Name:    proto.String(file_basename + ".pb.java"),
+			Content: proto.String(file_content[1]),
 		})
+
 	}
 }
 
 // Run all the plugins associated with the file.
 func (g *Generator) runPlugins(file *FileDescriptor) {
+	g.P("@@@split@@@")
 
-	g.P("/******************************** cgi-service xml *********************************/")
-
+	//g.P("/******************************** cgi-service xml *********************************/")
 	for _, p := range plugins {
 		p.Generate(file)
 	}
@@ -1204,24 +1219,21 @@ func (g *Generator) generate(file *FileDescriptor) {
 	g.file = g.FileOf(file.FileDescriptorProto)
 	g.usedPackages = make(map[string]bool)
 
-	if g.file.index == 0 {
-		g.P("/******************************** introduction *********************************/")
+	/******************************** introduction *********************************/
+	//This file is gnerated by protoc plugin 'protoc-gen-cgi'.
 
-		var intro string = `This file is gnerated by protoc plugin 'protoc-gen-cgi'.
+	//- cgi-worker xml:
+	//- referenced by jungle-web framework
+	//- put it into ${jungle-web-project}/src/main/resources/META-INF/worker
 
-	* cgi-worker xml: 
-		- referenced by jungle-web framework
-		- put it into ${jungle-web-project}/src/main/resources/META-INF/worker
+	//- cgi-service java class:
+	//- referenced by your own java code in jungle-web project
+	//- put it into ${jungle-web-project/src/main/.../...}
 
-	* cgi-service java class:
-		- referenced by your own java code in jungle-web project
-		- put it into ${jungle-web-project/src/main/.../...}
-
-	* usage:
-		- invoking protoc with params '--cgi_out=dir', only cgi-worker xml is generated
-		- invoking protoc with params '--cgi_out=plugins=service:dir', both cgi-worker xml and cgi-service java class are gnerated`
-		g.P(intro)
-	}
+	//- usage:
+	//- invoking protoc with params '--cgi_out=dir', only cgi-worker xml is generated
+	//- invoking protoc with params '--cgi_out=plugins=service:dir', both cgi-worker xml
+	//  and cgi-service java class are gnerated
 
 	/******************************** cgi-worker xml *********************************/
 
@@ -1290,12 +1302,11 @@ func (g *Generator) generate(file *FileDescriptor) {
 
 func (g *Generator) generateCgiWorkerXml(file *FileDescriptor) {
 
-	g.P("/******************************** cgi-worker xml *********************************/")
+	//g.P("/******************************** cgi-worker xml *********************************/")
 
 	if len(file.FileDescriptorProto.Service) == 0 {
 		return
 	}
-	g.P()
 
 	g.P("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
 	g.P("<cgi-project name=\"{cgi_project_name}\">")
@@ -1355,10 +1366,10 @@ func (g *Generator) generateCgiWorkerRpcItem(
 			</ilive>
 		*/
 		g.In()
-		g.P("// method index: ", idx)
+		//g.P("// method index: ", idx)
 
 		//g.P("<ilive name=\"", methName, "\" id=\"", &subcmd, "\"")
-		g.P("<ilive name=\"", methName, "\" id=\"CMD_", UpperCase(methName), "\"")
+		g.P("<ilive name=\"", origServName, ".", methName, "\" id=\"", UpperCase(origServName), "_CMD_", UpperCase(methName), "\"")
 
 		g.In()
 		g.P("workname=\"", origServName, "\" l5Modid=\"${L5_MID}\" l5Cmdid=\"${L5_CID}\"")
@@ -1370,14 +1381,14 @@ func (g *Generator) generateCgiWorkerRpcItem(
 		// desc
 		interface_path := fmt.Sprintf("6,%d,2,%d", index, idx)
 		text := ""
+		desc := ""
 		if loc, ok := g.file.comments[interface_path]; ok {
 			text = strings.TrimSuffix(loc.GetLeadingComments(), "\n")
-			text = strings.TrimPrefix(text, " ")
 			for _, line := range strings.Split(text, "\n") {
-				g.P("// ", strings.TrimPrefix(line, " "))
+				desc += strings.TrimPrefix(line, " ")
 			}
 		}
-		g.P("contacter=\"${Contact}\" desc=\"", text, "\" pbResult=\"true\">")
+		g.P("contacter=\"${Contact}\" desc=\"", desc, "\" pbResult=\"true\">")
 
 		g.Out()
 		g.P("</ilive>")
