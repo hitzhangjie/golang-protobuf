@@ -257,7 +257,7 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 	g.P()
 	for _, method := range service.Method {
 		origMethName := method.GetName()
-		g.P(origServName, ".", generator.CamelCase(origMethName), " = manager.getServiceAdapter(\"", generator.CamelCase(origMethName), "\");")
+		g.P(origServName, ".", generator.CamelCase(origMethName), " = manager.getServiceAdapter(\"CMD_", generator.UpperCase(origMethName), "\");")
 	}
 	g.Out()
 	g.P("}")

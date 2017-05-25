@@ -1179,6 +1179,9 @@ func (g *Generator) GenerateAllFiles() {
 
 // Run all the plugins associated with the file.
 func (g *Generator) runPlugins(file *FileDescriptor) {
+
+	g.P("/******************************** cgi-service xml *********************************/")
+
 	for _, p := range plugins {
 		p.Generate(file)
 	}
@@ -1220,7 +1223,7 @@ func (g *Generator) generate(file *FileDescriptor) {
 		g.P(intro)
 	}
 
-	g.P("/******************************** cgi-worker xml *********************************/")
+	/******************************** cgi-worker xml *********************************/
 
 	g.generateCgiWorkerXml(file)
 
@@ -1244,7 +1247,7 @@ func (g *Generator) generate(file *FileDescriptor) {
 		g.generateInitFunction()
 	*/
 
-	g.P("/******************************** cgi-service xml *********************************/")
+	/******************************** cgi-service xml *********************************/
 
 	// Run the plugins before the imports so we know which imports are necessary.
 	g.runPlugins(file)
@@ -1286,6 +1289,8 @@ func (g *Generator) generate(file *FileDescriptor) {
 }
 
 func (g *Generator) generateCgiWorkerXml(file *FileDescriptor) {
+
+	g.P("/******************************** cgi-worker xml *********************************/")
 
 	if len(file.FileDescriptorProto.Service) == 0 {
 		return

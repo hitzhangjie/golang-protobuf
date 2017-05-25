@@ -31,7 +31,11 @@ message TestRsp2
 	optional string msg = 1;
 };
 
+/* testsvr service */
 service TestSvr {
+    // testsvr interface 1
 	rpc CallTestInterface1(TestReq1) returns(TestRsp1);
+
+    // testsvr interface 2
 	rpc CallTestInterface2(TestReq2) returns(TestRsp2);
 };
