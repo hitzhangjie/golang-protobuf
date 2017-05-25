@@ -136,8 +136,8 @@ func (g *cgiservice) Generate(file *generator.FileDescriptor) {
 	// import
 	g.P("import com.google.inject.Inject;")
 	g.P()
-	g.P("import com.tencent.jungle.now.web.exec.user.ExchangeUidInfoExecutor;")
-	g.P("import com.tencent.jungle.now.web.proto.PBNoble;")
+	g.P("import com.tencent.jungle.now.web.exec.user.ExchangeUidInfoExecutor;	// fixme")
+	g.P("import com.tencent.jungle.now.web.proto.PBNoble;						// fixme")
 	g.P("import com.tencent.jungle.web.config.CGIContext;")
 	g.P("import com.tencent.jungle.web.config.ResourceCGISpecManager;")
 	g.P("import com.tencent.jungle.web.config.adapters.CGIServiceAdapter;")
@@ -166,11 +166,18 @@ func (g *cgiservice) Generate(file *generator.FileDescriptor) {
 	g.P(" * @see    ${proto}")
 	g.P(" */")
 	// - class definition
+	g.P("@Singleton")
 	g.P("class ", fullClassName, " {")
 	g.In()
 	// -- class members
 	g.P()
 	g.P("// class members")
+	// --- logging
+	g.P("final Logger log = LoggerFactory.getLogger(", fullClassName, ".class);")
+	// --- CGIServiceWrapping class declarations
+	for i, service := range file.FileDescriptorProto.Service {
+		g.generateCGIServiceAdapter(file, service, i)
+	}
 
 	// -- class methods
 	g.P()
@@ -216,6 +223,190 @@ var reservedClientName = map[string]bool{
 }
 
 func unexport(s string) string { return strings.ToLower(s[:1]) + s[1:] }
+
+// generateService generates all the code for the named service.
+func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, service *pb.ServiceDescriptorProto, index int) {
+	path := fmt.Sprintf("6,%d", index) // 6 means service.
+
+	origServName := service.GetName()
+	fullServName := origServName
+	if pkg := file.GetPackage(); pkg != "" {
+		fullServName = pkg + "." + fullServName
+	}
+	servName := generator.CamelCase(origServName)
+
+	g.P()
+	g.P("/**")
+	g.P(" * CGIServiceWrapping class for ", servName, " service")
+	g.P(" */ ")
+	g.P("class ", servName, " {")
+	g.P()
+	g.In()
+	// + CGIServiceAdapter for each service interface
+	for i, method := range service.Method {
+		g.gen.PrintComments(fmt.Sprintf("%s,2,%d", path, i))
+		origMethName := method.GetName()
+		g.P("static CGIServiceAdapter ", generator.CamelCase(origMethName), " = null;")
+		g.P()
+	}
+	// - inject all declared CGIServiceAdapter members
+	g.P()
+	g.P("@Inject")
+	g.P("public ", servName, "(ResourceCGISpecManager manager) {")
+	g.In()
+	g.P()
+	for _, method := range service.Method {
+		origMethName := method.GetName()
+		g.P(origServName, ".", generator.CamelCase(origMethName), " = manager.getServiceAdapter(\"", generator.CamelCase(origMethName), "\");")
+	}
+	g.Out()
+	g.P("}")
+	// - service method
+	g.P()
+	for i, method := range service.Method {
+		origMethName := method.GetName()
+		inputType := method.GetInputType()
+		inputType = inputType[strings.LastIndex(inputType, ".")+1:]
+		outputType := method.GetOutputType()
+		outputType = outputType[strings.LastIndex(outputType, ".")+1:]
+
+		g.gen.PrintComments(fmt.Sprintf("%s,2,%d", path, i))
+		g.P("//")
+		g.P("@param cgiContext cgiContext contains params info to build ", inputType, " instance")
+		g.P("@return           return the ", outputType, " instance")
+		g.P("public ", outputType, " Do", generator.CamelCase(origMethName), "(CGIContext cgiContext) {")
+
+		g.P()
+		g.In()
+
+		g.P(outputType, " result = null;")
+		g.P("try {")
+		g.In()
+		g.P("result = ", origMethName, ".doService(cgiContext);")
+		g.Out()
+		g.P("}")
+		g.P("catch (Exception e) {")
+		g.In()
+		g.P("log.error(\"exception occurred, {}\", e);")
+		g.Out()
+		g.P("}")
+
+		g.P()
+		g.P("return result;")
+
+		g.Out()
+		g.P("}")
+		g.P()
+	}
+
+	g.Out()
+	g.P("}")
+
+	g.P()
+	g.P()
+	g.P()
+
+	// Client interface.
+	//
+	g.P("type ", servName, "Client interface {")
+	for i, method := range service.Method {
+		g.gen.PrintComments(fmt.Sprintf("%s,2,%d", path, i)) // 2 means method in a service.
+		g.P(g.generateClientSignature(servName, method))
+	}
+	g.P("}")
+	g.P()
+
+	// Client structure.
+	g.P("type ", unexport(servName), "Client struct {")
+	g.P("cc *", cgiservicePkg, ".ClientConn")
+	g.P("}")
+	g.P()
+
+	// NewClient factory.
+	g.P("func New", servName, "Client (cc *", cgiservicePkg, ".ClientConn) ", servName, "Client {")
+	g.P("return &", unexport(servName), "Client{cc}")
+	g.P("}")
+	g.P()
+
+	var methodIndex, streamIndex int
+	serviceDescVar := "_" + servName + "_serviceDesc"
+	// Client method implementations.
+	for _, method := range service.Method {
+		var descExpr string
+		if !method.GetServerStreaming() && !method.GetClientStreaming() {
+			// Unary RPC method
+			descExpr = fmt.Sprintf("&%s.Methods[%d]", serviceDescVar, methodIndex)
+			methodIndex++
+		} else {
+			// Streaming RPC method
+			descExpr = fmt.Sprintf("&%s.Streams[%d]", serviceDescVar, streamIndex)
+			streamIndex++
+		}
+		g.generateClientMethod(servName, fullServName, serviceDescVar, method, descExpr)
+	}
+
+	g.P("// Server API for ", servName, " service")
+	g.P()
+
+	// Server interface.
+	serverType := servName + "Server"
+	g.P("type ", serverType, " interface {")
+	for i, method := range service.Method {
+		g.gen.PrintComments(fmt.Sprintf("%s,2,%d", path, i)) // 2 means method in a service.
+		g.P(g.generateServerSignature(servName, method))
+	}
+	g.P("}")
+	g.P()
+
+	// Server registration.
+	g.P("func Register", servName, "Server(s *", cgiservicePkg, ".Server, srv ", serverType, ") {")
+	g.P("s.RegisterService(&", serviceDescVar, `, srv)`)
+	g.P("}")
+	g.P()
+
+	// Server handler implementations.
+	var handlerNames []string
+	for _, method := range service.Method {
+		hname := g.generateServerMethod(servName, fullServName, method)
+		handlerNames = append(handlerNames, hname)
+	}
+
+	// Service descriptor.
+	g.P("var ", serviceDescVar, " = ", cgiservicePkg, ".ServiceDesc {")
+	g.P("ServiceName: ", strconv.Quote(fullServName), ",")
+	g.P("HandlerType: (*", serverType, ")(nil),")
+	g.P("Methods: []", cgiservicePkg, ".MethodDesc{")
+	for i, method := range service.Method {
+		if method.GetServerStreaming() || method.GetClientStreaming() {
+			continue
+		}
+		g.P("{")
+		g.P("MethodName: ", strconv.Quote(method.GetName()), ",")
+		g.P("Handler: ", handlerNames[i], ",")
+		g.P("},")
+	}
+	g.P("},")
+	g.P("Streams: []", cgiservicePkg, ".StreamDesc{")
+	for i, method := range service.Method {
+		if !method.GetServerStreaming() && !method.GetClientStreaming() {
+			continue
+		}
+		g.P("{")
+		g.P("StreamName: ", strconv.Quote(method.GetName()), ",")
+		g.P("Handler: ", handlerNames[i], ",")
+		if method.GetServerStreaming() {
+			g.P("ServerStreams: true,")
+		}
+		if method.GetClientStreaming() {
+			g.P("ClientStreams: true,")
+		}
+		g.P("},")
+	}
+	g.P("},")
+	g.P("Metadata: \"", file.GetName(), "\",")
+	g.P("}")
+	g.P()
+}
 
 // generateService generates all the code for the named service.
 func (g *cgiservice) generateService(file *generator.FileDescriptor, service *pb.ServiceDescriptorProto, index int) {
