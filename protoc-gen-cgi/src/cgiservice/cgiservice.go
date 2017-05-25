@@ -295,6 +295,11 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 		g.P(java_outer_classname, ".", outputType, " result = null;")
 		g.P("try {")
 		g.In()
+		// - build the pb request & update cgiContext
+		// -
+
+		// -
+
 		g.P("result = ", "(", java_outer_classname, ".", outputType, ")", origMethName, ".doService(cgiContext);")
 		g.Out()
 		g.P("}")
