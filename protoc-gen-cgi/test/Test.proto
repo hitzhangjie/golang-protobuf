@@ -1,7 +1,7 @@
 package test;
 
 option java_outer_classname = "PBXXX";
-option java_multiple_files = true;
+//option java_multiple_files = true;
 
 enum BIG_CMD
 {

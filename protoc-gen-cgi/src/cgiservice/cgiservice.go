@@ -135,8 +135,12 @@ func (g *cgiservice) Generate(file *generator.FileDescriptor) {
 	// import
 	g.P("import com.google.inject.Inject;")
 	g.P()
-	g.P("import com.tencent.jungle.now.web.exec.user.ExchangeUidInfoExecutor;	// fixme")
-	g.P("import com.tencent.jungle.now.web.proto.PBNoble;						// fixme")
+
+	// import PBWrappingClass for .proto files
+	java_pkg_name := file.PackageName()
+	java_outer_classname := getJavaOuterClassname(file)
+	g.P("import ", java_pkg_name, ".", java_outer_classname, ";")
+	// import other common classes in ${jungle-cgi-project}
 	g.P("import com.tencent.jungle.web.config.CGIContext;")
 	g.P("import com.tencent.jungle.web.config.ResourceCGISpecManager;")
 	g.P("import com.tencent.jungle.web.config.adapters.CGIServiceAdapter;")
@@ -154,15 +158,11 @@ func (g *cgiservice) Generate(file *generator.FileDescriptor) {
 	// wrapping class
 	// - classname
 	classPrefix := "Gen"
-	classSuffix := "CGIServiceAdapter"
+	classSuffix := "WrapClass"
 	fullClassName := classPrefix + generator.CamelCase(file.PackageName()) + classSuffix
 	// - class comments
 	g.P("/**")
 	g.P(" * ", fullClassName)
-	g.P(" * ")
-	g.P(" * ${proto-package-comments}")
-	g.P(" * @author ${whoami}")
-	g.P(" * @see    ${proto}")
 	g.P(" */")
 	// - class definition
 	g.P("@Singleton")
@@ -222,6 +222,17 @@ var reservedClientName = map[string]bool{
 
 func unexport(s string) string { return strings.ToLower(s[:1]) + s[1:] }
 
+// get value of 'option java_outer_classname=?'
+func getJavaOuterClassname(file *generator.FileDescriptor) string {
+	options := file.GetOptions()
+	if options == nil {
+		return ""
+	} else {
+		java_outer_classname := options.GetJavaOuterClassname()
+		return java_outer_classname
+	}
+}
+
 // generateService generates all the code for the named service.
 func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, service *pb.ServiceDescriptorProto, index int) {
 	path := fmt.Sprintf("6,%d", index) // 6 means service.
@@ -232,6 +243,8 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 		fullServName = pkg + "." + fullServName
 	}
 	servName := generator.CamelCase(origServName)
+
+	java_outer_classname := getJavaOuterClassname(file)
 
 	g.P()
 	g.P("/**")
@@ -260,6 +273,7 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 	}
 	g.Out()
 	g.P("}")
+
 	// - service method
 	g.P()
 	for i, method := range service.Method {
@@ -278,10 +292,10 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 		g.P()
 		g.In()
 
-		g.P(outputType, " result = null;")
+		g.P(java_outer_classname, ".", outputType, " result = null;")
 		g.P("try {")
 		g.In()
-		g.P("result = ", origMethName, ".doService(cgiContext);")
+		g.P("result = ", "(", java_outer_classname, ".", outputType, ")", origMethName, ".doService(cgiContext);")
 		g.Out()
 		g.P("}")
 		g.P("catch (Exception e) {")

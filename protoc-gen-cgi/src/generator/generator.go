@@ -1237,6 +1237,24 @@ func (g *Generator) generate(file *FileDescriptor) {
 
 	/******************************** cgi-worker xml *********************************/
 
+	options := file.GetOptions()
+	if options != nil {
+		// option java_outer_classname must be specified
+		java_outer_classname := options.GetJavaOuterClassname()
+		if java_outer_classname == "" {
+			g.P("java_outer_classname must be specified.")
+		}
+
+		// disable option java_multiple_files
+		java_multiple_files := options.GetJavaMultipleFiles()
+		if java_multiple_files {
+			g.Fail(`option java_multiple_files must be disabed, we suggest generating 
+					classes in one wrapping class named by "java_outer_classname"`)
+		}
+	} else {
+		g.Fail("option java_outer_classname must be specified.")
+	}
+
 	g.generateCgiWorkerXml(file)
 
 	/*
