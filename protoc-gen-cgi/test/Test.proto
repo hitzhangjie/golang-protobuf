@@ -1,4 +1,4 @@
-package test;
+package com.tencent.jungle.now.web.proto;
 
 option java_outer_classname = "PBXXX";
 //option java_multiple_files = true;

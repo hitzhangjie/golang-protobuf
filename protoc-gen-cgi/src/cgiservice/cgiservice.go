@@ -129,7 +129,7 @@ func (g *cgiservice) Generate(file *generator.FileDescriptor) {
 	g.P(" */")
 
 	// package
-	g.P("package com.tencent.jungle.now.web.", file.PackageName(), ";")
+	g.P("package ", strings.Replace(file.PackageName(), "_", ".", -1), ";")
 	g.P()
 
 	// import
@@ -157,9 +157,9 @@ func (g *cgiservice) Generate(file *generator.FileDescriptor) {
 
 	// wrapping class
 	// - classname
-	classPrefix := "Gen"
+	classPrefix := "Ilive"
 	classSuffix := "WrapClass"
-	fullClassName := classPrefix + generator.CamelCase(file.PackageName()) + classSuffix
+	fullClassName := classPrefix + generator.CamelCase(java_outer_classname) + classSuffix
 	// - class comments
 	g.P("/**")
 	g.P(" * ", fullClassName)
