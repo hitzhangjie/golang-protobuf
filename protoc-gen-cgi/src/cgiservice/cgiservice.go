@@ -181,26 +181,6 @@ func (g *cgiservice) Generate(file *generator.FileDescriptor) {
 	g.Out()
 	g.P("}")
 	g.P()
-
-	/*
-		g.P()
-		g.P()
-
-		g.P("// Reference imports to suppress errors if they are not otherwise used.")
-		g.P("var _ ", contextPkg, ".Context")
-		g.P("var _ ", cgiservicePkg, ".ClientConn")
-		g.P()
-
-		// Assert version compatibility.
-		g.P("// This is a compile-time assertion to ensure that this generated file")
-		g.P("// is compatible with the cgiservice package it is being compiled against.")
-		g.P("const _ = ", cgiservicePkg, ".SupportPackageIsVersion", generatedCodeVersion)
-		g.P()
-
-		for i, service := range file.FileDescriptorProto.Service {
-			g.generateService(file, service, i)
-		}
-	*/
 }
 
 // GenerateImports generates the import declaration for this file.
@@ -296,10 +276,27 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 		g.P("try {")
 		g.In()
 		// - build the pb request & update cgiContext
-		// -
+		g.P(java_outer_classname, ".", inputType, " pbReqBuilder = ", java_outer_classname, ".", inputType, ".newBuilder();")
+		// -- resolve inputType & update pbReqBuilder
+		//unsafe_file * generator.FileDescriptorProto = Unsafe.Pointer(file)
+		for _, message := range file.MessageType {
+			if typeName := message.GetName(); typeName == inputType {
+				fields := message.GetField()
+				for _, f := range fields {
+					fname := f.GetName()
+					ftype := f.GetTypeName()
+					fvalue := f.GetDefaultValue()
+					// providing ftype is primitive datatypes
+					g.P("name=", fname, ", type=", ftype, ", value=", fvalue)
 
-		// -
+				}
 
+				break
+			}
+		}
+
+		g.P("cgiContext.setPbRequestMessage(pbReqBuilder.build());")
+		// - call backend service
 		g.P("result = ", "(", java_outer_classname, ".", outputType, ")", origMethName, ".doService(cgiContext);")
 		g.Out()
 		g.P("}")
