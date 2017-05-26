@@ -283,12 +283,18 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 			if typeName := message.GetName(); typeName == inputType {
 				fields := message.GetField()
 				for _, f := range fields {
-					fname := f.GetName()
-					ftype := f.GetTypeName()
-					fvalue := f.GetDefaultValue()
-					// providing ftype is primitive datatypes
-					g.P("name=", fname, ", type=", ftype, ", value=", fvalue)
+					fname := *f.Name
+					//f.GetTypeName() & f.GetDefaultValue() not working
+					ftype := g.getTypeName(*f.Type)
 
+					category := g.getTypeCategory(ftype)
+					switch category {
+					case "primitive":
+						g.P("pbReqBuilder.set", generator.CamelCase(fname), "((", ftype, ")cgiContext.get(\"", fname, "\"));")
+					case "class":
+					default:
+						g.P("// Unsupported datatype found: fieldname=", fname, ", fieldtype=", ftype, ", ignored.")
+					}
 				}
 
 				break
@@ -317,4 +323,63 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 	g.Out()
 	g.P("}")
 
+}
+
+func (g *cgiservice) getTypeName(enum_value pb.FieldDescriptorProto_Type) string {
+	// convert enum value to int
+	str := fmt.Sprintf("%d", enum_value)
+	val, err := strconv.Atoi(str)
+	if err != nil {
+		g.gen.Fail("Encounter invalid pb.FieldDescriptorProto_Type enum value")
+	}
+	val32 := int32(val)
+
+	typename := ""
+
+	if enum_name, ok := pb.FieldDescriptorProto_Type_name[val32]; ok {
+		g.P("enum_name is: ", enum_name)
+		switch enum_name {
+		case "TYPE_DOUBLE":
+			typename = "double"
+		case "TYPE_FLOAT":
+			typename = "float"
+		case "TYPE_INT64", "TYPE_UINT64", "TYPE_SINT64", "TYPE_FIXED64", "TYPE_SFIXED64":
+			typename = "long"
+		case "TYPE_INT32", "TYPE_UINT32", "TYPE_SINT32", "TYPE_FIXED32", "TYPE_SFIXED32":
+			typename = "int"
+		case "TYPE_BOOL":
+			typename = "boolean"
+		case "TYPE_STRING":
+			typename = "string"
+		case "TYPE_MESSAGE":
+			typename = "class_message"
+		case "TYPE_BYTES":
+			typename = "byte[]"
+		case "TYPE_ENUM":
+			typename = "enum"
+		case "TYPE_GROUP":
+			typename = "class_group"
+		default:
+			typename = "type_new_added"
+		}
+	} else {
+		typename = "type_not_recognized"
+	}
+
+	return typename
+}
+
+func (g *cgiservice) getTypeCategory(typename string) string {
+	category := ""
+
+	switch typename {
+	case "double", "float", "long", "int", "boolean", "string", "byte[]", "enum":
+		category = "primitive"
+	case "class_message", "class_group":
+		category = "class"
+	case "type_new_added", "type_not_recognized":
+		category = "unsupported"
+	}
+
+	return category
 }
