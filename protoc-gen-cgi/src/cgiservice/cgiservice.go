@@ -175,6 +175,7 @@ func (g *cgiservice) Generate(file *generator.FileDescriptor) {
 	g.P("// class members")
 	// --- logging
 	g.P("static final Logger log = LoggerFactory.getLogger(", fullClassName, ".class);")
+	g.P()
 	// --- inject service instance member
 	for _, service := range file.FileDescriptorProto.Service {
 		origServName := service.GetName()
@@ -203,7 +204,7 @@ func (g *cgiservice) Generate(file *generator.FileDescriptor) {
 
 	// - service class declarations
 	for i, service := range file.FileDescriptorProto.Service {
-		g.generateCGIServiceAdapter(file, service, i)
+		g.generateServiceClass(file, service, i)
 	}
 
 }
@@ -228,7 +229,7 @@ var reservedClientName = map[string]bool{
 func unexport(s string) string { return strings.ToLower(s[:1]) + s[1:] }
 
 // generateService generates all the code for the named service.
-func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, service *pb.ServiceDescriptorProto, index int) {
+func (g *cgiservice) generateServiceClass(file *generator.FileDescriptor, service *pb.ServiceDescriptorProto, index int) {
 	path := fmt.Sprintf("6,%d", index) // 6 means service.
 
 	origServName := service.GetName()
@@ -248,6 +249,8 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 	g.P("class ", servName, " {")
 	g.P()
 	g.In()
+	g.P("static final Logger log = LoggerFactory.getLogger(", servName, ".class);")
+	g.P()
 	// + CGIServiceAdapter for each service interface
 	for i, method := range service.Method {
 		g.gen.PrintComments(fmt.Sprintf("%s,2,%d", path, i))

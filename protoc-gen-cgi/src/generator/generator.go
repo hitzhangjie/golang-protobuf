@@ -1349,10 +1349,18 @@ func (g *Generator) generateCgiWorkerXml(file *FileDescriptor) {
 	g.P("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
 	g.P("<cgi-project name=\"{cgi_project_name}\">")
 
+	g.In()
+	g.P("<services>")
+
+	g.In()
 	//for i, service := range file.FileDescriptorProto.Service {
 	for i, service := range file.FileDescriptorProto.Service {
 		g.generateCgiWorkerRpcItem(file, service, i)
 	}
+	g.Out()
+
+	g.P("</services>")
+	g.Out()
 
 	g.P("</cgi-project>")
 	g.P()
@@ -1360,6 +1368,9 @@ func (g *Generator) generateCgiWorkerXml(file *FileDescriptor) {
 
 func (g *Generator) generateCgiWorkerRpcItem(
 	file *FileDescriptor, service *descriptor.ServiceDescriptorProto, index int) {
+
+	java_pkg_name := strings.Replace(file.PackageName(), "_", ".", -1)
+	java_outer_classname := GetJavaOuterClassname(file)
 
 	origServName := service.GetName()
 
@@ -1413,8 +1424,15 @@ func (g *Generator) generateCgiWorkerRpcItem(
 		g.P("workname=\"", origServName, "\" l5Modid=\"${L5_MID}\" l5Cmdid=\"${L5_CID}\"")
 		g.P("testL5Modid=\"${Test_L5_MID}\" testL5Cmdid=\"${Test_L5_CID}\" cmd=\"", &bigcmd, "\" subCmd=\"", &subcmd, "\"")
 		g.P("timeout=\"2000\" tryAgain=\"false\"")
-		g.P("reqProtoClazz=\"", method.GetInputType()[1:], "\"")
-		g.P("rspProtoClazz=\"", method.GetOutputType()[1:], "\"")
+
+		origInputType := method.GetInputType()[1:]
+		baseInputType := origInputType[strings.LastIndex(origInputType, ".")+1:]
+
+		origOutputType := method.GetOutputType()[1:]
+		baseOutputType := origOutputType[strings.LastIndex(origOutputType, ".")+1:]
+
+		g.P("reqProtoClazz=\"", java_pkg_name, ".", java_outer_classname, "$", baseInputType, "\"")
+		g.P("rspProtoClazz=\"", java_pkg_name, ".", java_outer_classname, "$", baseOutputType, "\"")
 
 		// desc
 		interface_path := fmt.Sprintf("6,%d,2,%d", index, idx)
