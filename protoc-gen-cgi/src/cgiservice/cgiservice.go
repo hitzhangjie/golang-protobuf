@@ -168,21 +168,44 @@ func (g *cgiservice) Generate(file *generator.FileDescriptor) {
 	g.P(" */")
 	// - class definition
 	g.P("@Singleton")
-	g.P("class ", fullClassName, " {")
+	g.P("public class ", fullClassName, " {")
 	g.In()
 	// -- class members
 	g.P()
 	g.P("// class members")
 	// --- logging
-	g.P("final Logger log = LoggerFactory.getLogger(", fullClassName, ".class);")
-	// --- CGIServiceWrapping class declarations
-	for i, service := range file.FileDescriptorProto.Service {
-		g.generateCGIServiceAdapter(file, service, i)
+	g.P("static final Logger log = LoggerFactory.getLogger(", fullClassName, ".class);")
+	// --- inject service instance member
+	for _, service := range file.FileDescriptorProto.Service {
+		origServName := service.GetName()
+		servName := generator.CamelCase(origServName)
+		memName := "m_" + servName
+		g.P("@Inject")
+		g.P("private ", servName, " ", memName, " = null;")
+		g.P()
+
+		// --- wrapping service method
+		for _, method := range service.Method {
+			origMethName := method.GetName()
+			methName := generator.CamelCase(origMethName)
+			g.P("public Object ", servName, "_", methName, "(CGIContext cgiContext) throws Pausable {")
+			g.In()
+			g.P("return ", memName, ".", "DO", methName, "(cgiContext);")
+			g.Out()
+			g.P("}")
+			g.P()
+		}
 	}
 
 	g.Out()
 	g.P("}")
 	g.P()
+
+	// - service class declarations
+	for i, service := range file.FileDescriptorProto.Service {
+		g.generateCGIServiceAdapter(file, service, i)
+	}
+
 }
 
 // GenerateImports generates the import declaration for this file.
@@ -219,8 +242,9 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 
 	g.P()
 	g.P("/**")
-	g.P(" * CGIServiceWrapping class for ", servName, " service")
+	g.P(" * service class for ", servName, " service")
 	g.P(" */ ")
+	g.P("@Singleton")
 	g.P("class ", servName, " {")
 	g.P()
 	g.In()
@@ -228,7 +252,7 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 	for i, method := range service.Method {
 		g.gen.PrintComments(fmt.Sprintf("%s,2,%d", path, i))
 		origMethName := method.GetName()
-		g.P("CGIServiceAdapter ", generator.CamelCase(origMethName), " = null;")
+		g.P("private CGIServiceAdapter ", generator.CamelCase(origMethName), " = null;")
 		g.P()
 	}
 	// - inject all declared CGIServiceAdapter members
@@ -258,7 +282,7 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 		g.P("//")
 		g.P("//@param cgiContext cgiContext contains params info to build ", inputType, " instance")
 		g.P("//@return           return the ", outputType, " instance")
-		g.P("public ", java_outer_classname, ".", outputType, " Do", generator.CamelCase(origMethName), "(CGIContext cgiContext) {")
+		g.P("public ", java_outer_classname, ".", outputType, " Do", generator.CamelCase(origMethName), "(CGIContext cgiContext) throws Pausable {")
 
 		g.P()
 		g.In()
