@@ -128,8 +128,9 @@ func (g *cgiservice) Generate(file *generator.FileDescriptor) {
 	g.P(" * @see    ${proto}")
 	g.P(" */")
 
+	java_pkg_name := strings.Replace(file.PackageName(), "_", ".", -1)
 	// package
-	g.P("package ", strings.Replace(file.PackageName(), "_", ".", -1), ";")
+	g.P("package ", java_pkg_name, ";")
 	g.P()
 
 	// import
@@ -137,7 +138,6 @@ func (g *cgiservice) Generate(file *generator.FileDescriptor) {
 	g.P()
 
 	// import PBWrappingClass for .proto files
-	java_pkg_name := file.PackageName()
 	java_outer_classname := getJavaOuterClassname(file)
 	g.P("import ", java_pkg_name, ".", java_outer_classname, ";")
 	// import other common classes in ${jungle-cgi-project}
