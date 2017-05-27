@@ -129,16 +129,18 @@ func (g *cgiservice) Generate(file *generator.FileDescriptor) {
 	g.P(" */")
 
 	java_pkg_name := strings.Replace(file.PackageName(), "_", ".", -1)
+
 	// package
 	g.P("package ", java_pkg_name, ";")
 	g.P()
 
 	// import
 	g.P("import com.google.inject.Inject;")
+	g.P("import com.google.inject.Singleton;")
 	g.P()
 
 	// import PBWrappingClass for .proto files
-	java_outer_classname := getJavaOuterClassname(file)
+	java_outer_classname := generator.GetJavaOuterClassname(file)
 	g.P("import ", java_pkg_name, ".", java_outer_classname, ";")
 	// import other common classes in ${jungle-cgi-project}
 	g.P("import com.tencent.jungle.web.config.CGIContext;")
@@ -202,17 +204,6 @@ var reservedClientName = map[string]bool{
 
 func unexport(s string) string { return strings.ToLower(s[:1]) + s[1:] }
 
-// get value of 'option java_outer_classname=?'
-func getJavaOuterClassname(file *generator.FileDescriptor) string {
-	options := file.GetOptions()
-	if options == nil {
-		return ""
-	} else {
-		java_outer_classname := options.GetJavaOuterClassname()
-		return java_outer_classname
-	}
-}
-
 // generateService generates all the code for the named service.
 func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, service *pb.ServiceDescriptorProto, index int) {
 	path := fmt.Sprintf("6,%d", index) // 6 means service.
@@ -224,7 +215,7 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 	}
 	servName := generator.CamelCase(origServName)
 
-	java_outer_classname := getJavaOuterClassname(file)
+	java_outer_classname := generator.GetJavaOuterClassname(file)
 
 	g.P()
 	g.P("/**")
@@ -237,7 +228,7 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 	for i, method := range service.Method {
 		g.gen.PrintComments(fmt.Sprintf("%s,2,%d", path, i))
 		origMethName := method.GetName()
-		g.P("static CGIServiceAdapter ", generator.CamelCase(origMethName), " = null;")
+		g.P("CGIServiceAdapter ", generator.CamelCase(origMethName), " = null;")
 		g.P()
 	}
 	// - inject all declared CGIServiceAdapter members
@@ -249,7 +240,7 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 	for _, method := range service.Method {
 		origMethName := method.GetName()
 		methName := generator.CamelCase(origMethName)
-		g.P(servName, ".", methName, " = manager.getServiceAdapter(\"", generator.UpperCase(servName), "_CMD_", generator.UpperCase(origMethName), "\");")
+		g.P(methName, " = manager.getServiceAdapter(\"", generator.UpperCase(servName), "_CMD_", generator.UpperCase(origMethName), "\");")
 	}
 	g.Out()
 	g.P("}")
@@ -267,7 +258,7 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 		g.P("//")
 		g.P("//@param cgiContext cgiContext contains params info to build ", inputType, " instance")
 		g.P("//@return           return the ", outputType, " instance")
-		g.P("public ", outputType, " Do", generator.CamelCase(origMethName), "(CGIContext cgiContext) {")
+		g.P("public ", java_outer_classname, ".", outputType, " Do", generator.CamelCase(origMethName), "(CGIContext cgiContext) {")
 
 		g.P()
 		g.In()
@@ -276,7 +267,7 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 		g.P("try {")
 		g.In()
 		// - build the pb request & update cgiContext
-		g.P(java_outer_classname, ".", inputType, " pbReqBuilder = ", java_outer_classname, ".", inputType, ".newBuilder();")
+		g.P(java_outer_classname, ".", inputType, ".Builder", " pbReqBuilder = ", java_outer_classname, ".", inputType, ".newBuilder();")
 		// -- resolve inputType & update pbReqBuilder
 		//unsafe_file * generator.FileDescriptorProto = Unsafe.Pointer(file)
 		for _, message := range file.MessageType {
@@ -290,7 +281,7 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 					category := g.getTypeCategory(ftype)
 					switch category {
 					case "primitive":
-						g.P("pbReqBuilder.set", generator.CamelCase(fname), "((", ftype, ")cgiContext.get(\"", fname, "\"));")
+						g.P("pbReqBuilder.set", generator.CamelCase(fname), "((", g.getAutoboxType(ftype), ")cgiContext.get(\"", fname, "\"));")
 					case "class":
 					default:
 						g.P("// Unsupported datatype found: fieldname=", fname, ", fieldtype=", ftype, ", ignored.")
@@ -301,7 +292,7 @@ func (g *cgiservice) generateCGIServiceAdapter(file *generator.FileDescriptor, s
 			}
 		}
 
-		g.P("cgiContext.setPbRequestMessage(pbReqBuilder.build());")
+		g.P("cgiContext.setPbReqMsg(pbReqBuilder.build());")
 		// - call backend service
 		g.P("result = ", "(", java_outer_classname, ".", outputType, ")", origMethName, ".doService(cgiContext);")
 		g.Out()
@@ -337,7 +328,6 @@ func (g *cgiservice) getTypeName(enum_value pb.FieldDescriptorProto_Type) string
 	typename := ""
 
 	if enum_name, ok := pb.FieldDescriptorProto_Type_name[val32]; ok {
-		g.P("enum_name is: ", enum_name)
 		switch enum_name {
 		case "TYPE_DOUBLE":
 			typename = "double"
@@ -350,15 +340,15 @@ func (g *cgiservice) getTypeName(enum_value pb.FieldDescriptorProto_Type) string
 		case "TYPE_BOOL":
 			typename = "boolean"
 		case "TYPE_STRING":
-			typename = "string"
+			typename = "String"
 		case "TYPE_MESSAGE":
-			typename = "class_message"
+			typename = "class"
 		case "TYPE_BYTES":
 			typename = "byte[]"
 		case "TYPE_ENUM":
 			typename = "enum"
-		case "TYPE_GROUP":
-			typename = "class_group"
+		//case "TYPE_GROUP":
+		//  typename = "class_group"
 		default:
 			typename = "type_new_added"
 		}
@@ -382,4 +372,21 @@ func (g *cgiservice) getTypeCategory(typename string) string {
 	}
 
 	return category
+}
+
+func (g *cgiservice) getAutoboxType(typename string) string {
+	switch typename {
+	case "double":
+		return "Double"
+	case "float":
+		return "Float"
+	case "long":
+		return "Long"
+	case "int":
+		return "Integer"
+	case "boolean":
+		return "Boolean"
+	default:
+		return typename
+	}
 }

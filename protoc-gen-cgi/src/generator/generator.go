@@ -1171,10 +1171,17 @@ func (g *Generator) GenerateAllFiles() {
 			continue
 		}
 
+		// ----
+		// gen multiple files at one time
 		all_content := g.String()
 		file_content := strings.Split(all_content, "@@@split@@@\n")
 		file_fullname := file.GetName()
 		file_basename := file_fullname[:strings.LastIndex(file_fullname, ".")]
+
+		java_outer_classname := GetJavaOuterClassname(file)
+		classPrefix := "Ilive"
+		classSuffix := "WrapClass"
+		fullClassName := classPrefix + CamelCase(java_outer_classname) + classSuffix
 
 		g.Response.File = append(g.Response.File, &plugin.CodeGeneratorResponse_File{
 			//Name:    proto.String(g.genFileName(file)),
@@ -1187,7 +1194,7 @@ func (g *Generator) GenerateAllFiles() {
 		g.Response.File = append(g.Response.File, &plugin.CodeGeneratorResponse_File{
 			//Name:    proto.String(file.genFileName()),
 			//Content: proto.String(g.String()),
-			Name:    proto.String(file_basename + ".pb.java"),
+			Name:    proto.String(fullClassName + ".java"),
 			Content: proto.String(file_content[1]),
 		})
 
@@ -1201,6 +1208,17 @@ func (g *Generator) runPlugins(file *FileDescriptor) {
 	//g.P("/******************************** cgi-service xml *********************************/")
 	for _, p := range plugins {
 		p.Generate(file)
+	}
+}
+
+// get value of 'option java_outer_classname=?'
+func GetJavaOuterClassname(file *FileDescriptor) string {
+	options := file.GetOptions()
+	if options == nil {
+		return ""
+	} else {
+		java_outer_classname := options.GetJavaOuterClassname()
+		return java_outer_classname
 	}
 }
 
