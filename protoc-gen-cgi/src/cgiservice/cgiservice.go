@@ -191,7 +191,7 @@ func (g *cgiservice) Generate(file *generator.FileDescriptor) {
 			methName := generator.CamelCase(origMethName)
 			g.P("public Object ", servName, "_", methName, "(CGIContext cgiContext) throws Pausable {")
 			g.In()
-			g.P("return ", memName, ".", "DO", methName, "(cgiContext);")
+			g.P("return ", memName, ".", "Do", methName, "(cgiContext);")
 			g.Out()
 			g.P("}")
 			g.P()
